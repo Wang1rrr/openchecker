@@ -12,11 +12,11 @@ from openchecker import platform_adapter
 def test_github_releases_use_configured_token():
     adapter = platform_adapter.GitHubAdapter({"Github": {"access_key": "configured-token"}})
     api = Mock()
-    with (
-        patch.object(platform_adapter, "GhApi", return_value=api) as gh_api,
-        patch.object(platform_adapter, "paged", return_value=[[{"tag_name": "v1"}]]) as pages,
-    ):
-        releases, error = adapter.get_releases("https://github.com/example/project")
+    with patch.object(platform_adapter, "GhApi", return_value=api) as gh_api:
+        with patch.object(
+            platform_adapter, "paged", return_value=[[{"tag_name": "v1"}]]
+        ) as pages:
+            releases, error = adapter.get_releases("https://github.com/example/project")
 
     assert error is None
     assert releases == [{"tag_name": "v1"}]
