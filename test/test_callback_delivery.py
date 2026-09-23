@@ -2,6 +2,7 @@
 
 import json
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -18,14 +19,19 @@ def _run_message(tmp_path, callback_result, callback_url="https://example.test/c
         "command_list": [],
         "callback_url": callback_url,
     }
-    with (
-        patch.object(agent, "config", {"OpenCheck": {"repos_dir": str(tmp_path)}}),
-        patch.object(agent, "_download_project_source", return_value=True),
-        patch.object(agent, "_generate_lock_files"),
-        patch.object(agent, "_execute_commands"),
-        patch.object(agent, "_cleanup_project_source"),
-        patch.object(agent, "_send_results", return_value=callback_result),
-    ):
+    with ExitStack() as stack:
+        stack.enter_context(
+            patch.object(agent, "config", {"OpenCheck": {"repos_dir": str(tmp_path)}})
+        )
+        stack.enter_context(
+            patch.object(agent, "_download_project_source", return_value=True)
+        )
+        stack.enter_context(patch.object(agent, "_generate_lock_files"))
+        stack.enter_context(patch.object(agent, "_execute_commands"))
+        stack.enter_context(patch.object(agent, "_cleanup_project_source"))
+        stack.enter_context(
+            patch.object(agent, "_send_results", return_value=callback_result)
+        )
         agent.callback_func(channel, method, None, json.dumps(message).encode())
     return channel
 
